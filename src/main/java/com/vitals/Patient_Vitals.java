@@ -10,6 +10,9 @@ import org.apache.kafka.common.config.SaslConfigs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Properties;
 import java.util.Random;
 import java.time.Instant;
@@ -54,20 +57,19 @@ public class Patient_Vitals {
         kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
 
 
-
-
         KafkaProducer<String, String> producer = new KafkaProducer<>(kafkaProperties);
 
         for (;;) {
             // Send the JSON to the Kafka topic
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  alertVitals()));
-            Thread.sleep(2000);
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals()));
-
-            System.out.println("Published patient vitals:" + alertVitals());
-            System.out.println("Published alert vitals:" + normalVitals());
-            System.out.println();
+            String alertVitals = alertVitals();
             Thread.sleep(1000);
+            String normalVitals = normalVitals();
+            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
+            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
+
+            System.out.println("Published patient vitals:" + alertVitals);
+            System.out.println("Published patient vitals:" + normalVitals);
+            System.out.println();
 
         }
 
@@ -81,7 +83,9 @@ public class Patient_Vitals {
             // Create a JSON object for vitals
             ObjectNode vitals = objectMapper.createObjectNode();
 
-            vitals.put("time", Instant.now().getEpochSecond()); // Current timestamp
+            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
+
+            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
 
             // Generate random values for vitals outside the normal range
             Random rand = new Random();
@@ -114,7 +118,9 @@ public class Patient_Vitals {
             // Create a JSON object
             ObjectNode vitals = objectMapper.createObjectNode();
 
-            vitals.put("time", Instant.now().getEpochSecond()); // Current timestamp
+            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
+
+            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
 
             // Generate random values for vitals
             Random rand = new Random();
