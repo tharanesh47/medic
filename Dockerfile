@@ -1,17 +1,32 @@
-# Use OpenJDK 21
-FROM openjdk:21
+# 1. Use an official Maven image as a base
+FROM maven:3.8.6-openjdk-11-slim AS builder
 
-RUN apt-get update && apt-get install -y maven
+# 2. Set the working directory inside the container
+WORKDIR /app
+
+# 3. Copy the pom.xml and download the dependencies (this improves caching)
+COPY pom.xml .
+
+# 4. Run Maven to download dependencies and build the application
 RUN mvn clean install -DskipTests
 
-# Create directory for the application
-WORKDIR /Patient_Data
+# 5. Copy the rest of the source code
+COPY src /app/src
 
-# Copy the main application JAR (renaming it directly)
-COPY target/Patient_Data.jar /Patient_Data/Patient_Data.jar
+# 6. Build the application (use the proper Maven build command)
+RUN mvn package -DskipTests
 
-# Copy dependencies (Ensure correct path)
-COPY target/Patient_Data/lib/ /Patient_Data/lib/
+# 7. Use a new base image for running the application (lighter image)
+FROM openjdk:11-jre-slim
 
-# Run the Java application
-ENTRYPOINT ["java", "-Xms1g", "-Xmx2g", "-jar", "Patient_Data.jar"]
+# 8. Set the working directory for the runtime container (use /app instead of /target)
+WORKDIR /app
+
+# 9. Copy the built JAR from the builder stage into the runtime container
+COPY --from=builder /app/target/Patient_Data.jar /app/Patient_Data.jar
+
+# 10. Expose the port the app will be running on (optional, depending on the app)
+EXPOSE 8080
+
+# 11. Command to run the JAR file
+CMD ["java", "-jar", "/app/Patient_Data.jar"]
