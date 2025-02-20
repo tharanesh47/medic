@@ -1,3 +1,5 @@
+package com.vitals;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -5,7 +7,7 @@ import java.util.Properties;
 
 public class propertyReader {
 
-    static String filePath = "./src/main/resources/config.properties"; // Path to the properties file
+    static String filePath = "config.properties"; // Path to the properties file
     static Properties properties = new Properties();
     static FileInputStream fileInput ;
 
