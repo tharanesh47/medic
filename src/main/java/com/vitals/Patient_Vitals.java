@@ -62,15 +62,15 @@ public class Patient_Vitals {
         for (;;) {
             // Send the JSON to the Kafka topic
             String alertVitals = alertVitals();
+            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
+            System.out.println("Published alert vitals: " + alertVitals);
+            System.out.println();
             Thread.sleep(1000);
             String normalVitals = normalVitals();
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
             producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
-
-            System.out.println("Published patient vitals:" + alertVitals);
-            System.out.println("Published patient vitals:" + normalVitals);
+            System.out.println("Published patient vitals: " + normalVitals);
             System.out.println();
-
+            Thread.sleep(1000);
         }
 
     }
