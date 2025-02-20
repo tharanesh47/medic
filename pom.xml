@@ -32,6 +32,7 @@
 
 
     <build>
+    <finalName>Patient_Data</finalName>
     <plugins>
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
