@@ -1,3 +1,5 @@
+//package com.vitals;
+//
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import com.fasterxml.jackson.databind.node.ObjectNode;
 //import org.apache.kafka.clients.producer.KafkaProducer;
@@ -54,7 +56,7 @@
 //
 //            // Send the JSON to the Kafka topic
 //            String topic = "vitals-topic";  // Kafka topic name
-//            producer.send(new ProducerRecord<>(topic, null, jsonString));
+//            //producer.send(new ProducerRecord<>(topic, null, jsonString));
 //
 //            System.out.println("Sent message: " + jsonString);
 //
@@ -104,7 +106,7 @@
 //
 //            // Send the JSON to the Kafka topic
 //            String topic = "vitals-topic";  // Kafka topic name
-//            producer.send(new ProducerRecord<>(topic, null, jsonString));
+//            //producer.send(new ProducerRecord<>(topic, null, jsonString));
 //
 //            System.out.println("Sent message: " + jsonString);
 //
@@ -117,14 +119,22 @@
 //        }
 //    }
 //
-//    // Helper method to generate random int values outside normal range
+//    // Helper method to generate values outside the normal range (for int)
 //    private static int getRandomValueOutOfRange(Random rand, int min, int max) {
-//        return rand.nextInt((max - min) + 1) + min; // generates a value outside of normal ranges
+//        if (rand.nextBoolean()) { // 50% chance to generate below min
+//            return min - (rand.nextInt(10) + 1); // Ensures a valid negative offset
+//        } else { // 50% chance to generate above max
+//            return max + (rand.nextInt(10) + 1);
+//        }
 //    }
 //
-//    // Helper method to generate random double values outside normal range
+//    // Helper method to generate values outside the normal range (for double)
 //    private static double getRandomValueOutOfRange(Random rand, double min, double max) {
-//        return Math.round((rand.nextDouble() * (max - min) + min) * 10.0) / 10.0; // Rounds to 1 decimal place
+//        if (rand.nextBoolean()) { // 50% chance to go below min
+//            return Math.round((min - (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
+//        } else { // 50% chance to go above max
+//            return Math.round((max + (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
+//        }
 //    }
 //
 //    // Helper method to generate random int values within a range

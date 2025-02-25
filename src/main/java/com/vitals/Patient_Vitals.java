@@ -10,12 +10,10 @@ import org.apache.kafka.common.config.SaslConfigs;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Properties;
 import java.util.Random;
-import java.time.Instant;
 
 public class Patient_Vitals {
 
@@ -90,7 +88,7 @@ public class Patient_Vitals {
             // Generate random values for vitals outside the normal range
             Random rand = new Random();
             vitals.put("Id", getRandomValue(rand, 1, 5));
-            vitals.put("body_temperature(°F)", getRandomValueOutOfRange(rand, 95.0, 104.0));
+            vitals.put("body_temperature(°F)", getRandomValueOutOfRange(rand, 96.0, 104.0));
             vitals.put("heart_rate(bpm)", getRandomValueOutOfRange(rand, 40, 160));
             vitals.put("systolic_pressure(mmHg)", getRandomValueOutOfRange(rand, 60, 200));
             vitals.put("diastolic_pressure(mmHg)", getRandomValueOutOfRange(rand, 40, 120));
@@ -145,14 +143,22 @@ public class Patient_Vitals {
         }
     }
 
-    // Helper method to generate random int values outside normal range
+    // Helper method to generate values outside the normal range (for int)
     private static int getRandomValueOutOfRange(Random rand, int min, int max) {
-        return rand.nextInt((max - min) + 1) + min; // generates a value outside of normal ranges
+        if (rand.nextBoolean()) { // 50% chance to generate below min
+            return min - (rand.nextInt(10) + 1); // Ensures a valid negative offset
+        } else { // 50% chance to generate above max
+            return max + (rand.nextInt(10) + 1);
+        }
     }
 
-    // Helper method to generate random double values outside normal range
+    // Helper method to generate values outside the normal range (for double)
     private static double getRandomValueOutOfRange(Random rand, double min, double max) {
-        return Math.round((rand.nextDouble() * (max - min) + min) * 10.0) / 10.0; // Rounds to 1 decimal place
+        if (rand.nextBoolean()) { // 50% chance to go below min
+            return Math.round((min - (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
+        } else { // 50% chance to go above max
+            return Math.round((max + (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
+        }
     }
 
     // Helper method to generate random int values within a range
