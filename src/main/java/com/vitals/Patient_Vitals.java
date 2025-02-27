@@ -55,8 +55,8 @@ public class Patient_Vitals {
 
         KAFKA_CONSUMER_GROUP= loadconfigfile("KAFKA_CONSUMER_GROUP", properties);
 
-        KafkaProduser  kafka = new KafkaProduser();
 
+        KafkaProducerClass kafka = new KafkaProducerClass();
                 Properties kafkaProperties = new Properties();
 
                 String saslEnvValue = SASL_ENABLED;
@@ -95,6 +95,7 @@ public class Patient_Vitals {
 
                         try {
                             System.out.println("data process from kafka to kafka"+record.value());
+                            kafka.publishMessage(record.value());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
