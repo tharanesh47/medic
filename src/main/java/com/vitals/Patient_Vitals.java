@@ -2,7 +2,6 @@ package com.vitals;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StringDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -13,6 +12,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +52,7 @@ public class Patient_Vitals {
         SASL_MECHANISM = loadconfigfile("SASL_MECHANISM", properties);
         SASL_TLS_VERSION = loadconfigfile("SASL_TLS_VERSION", properties);
         SASL_PROTOCOL = loadconfigfile("SASL_PROTOCOL", properties);
-
+        KAFKA_INPUT_TOPIC  = loadconfigfile("KAFKA_INPUT_TOPIC",properties);
         KAFKA_CONSUMER_GROUP= loadconfigfile("KAFKA_CONSUMER_GROUP", properties);
 
 
