@@ -87,24 +87,6 @@ public class Patient_Vitals {
                 consumer.subscribe(Collections.singletonList(KAFKA_INPUT_TOPIC));
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 System.out.println("Connected to Kafka Broker...");
                 while (true)
                 {
