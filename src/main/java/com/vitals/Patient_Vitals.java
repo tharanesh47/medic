@@ -2,18 +2,28 @@ package com.vitals;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.StringDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.config.SaslConfigs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLOutput;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.Random;
+import java.util.UUID;
 
 public class Patient_Vitals {
 
@@ -25,6 +35,9 @@ public class Patient_Vitals {
     public static String SASL_MECHANISM;
     public static String SASL_TLS_VERSION;
     public static String SASL_PROTOCOL;
+    public static String KAFKA_INPUT_TOPIC;
+    public static String KAFKA_CONSUMER_GROUP;
+    static Consumer<String, String> consumer;
 
     public static void main(String[]args) throws Exception {
         // Set up Kafka producer properties
@@ -40,136 +53,82 @@ public class Patient_Vitals {
         SASL_TLS_VERSION = loadconfigfile("SASL_TLS_VERSION", properties);
         SASL_PROTOCOL = loadconfigfile("SASL_PROTOCOL", properties);
 
+        KAFKA_CONSUMER_GROUP= loadconfigfile("KAFKA_CONSUMER_GROUP", properties);
 
-        Properties kafkaProperties = new Properties();
-        kafkaProperties.put("bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS);
-        kafkaProperties.put("acks", "all");
-        kafkaProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        kafkaProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        kafkaProperties.put("topic",KAFKA_OUTPUT_TOPIC);
-        kafkaProperties.put("batch.size", "5"); // Set the desired batch size in bytes
-        kafkaProperties.put("linger.ms", "30000");
-        kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SASL_PROTOCOL); // Use SASL over SSL for security
-        kafkaProperties.put(SaslConfigs.SASL_MECHANISM, SASL_MECHANISM); // Authentication mechanism
-        kafkaProperties.put("ssl.enabled.protocols", SASL_TLS_VERSION);  // Specify allowed TLS versions
-        kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
+        KafkaProduser  kafka = new KafkaProduser();
+
+                Properties kafkaProperties = new Properties();
+
+                String saslEnvValue = SASL_ENABLED;
+                boolean	sasl_enabled = (saslEnvValue != null && !saslEnvValue.isEmpty())
+                        ? Boolean.parseBoolean(saslEnvValue)
+                        : false;
+
+                if(sasl_enabled) {
+                    kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,KAFKA_BOOTSTRAP_SERVERS);
+                    kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, KAFKA_CONSUMER_GROUP);
+                    kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+                    kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+                    kafkaProperties.put(ProducerConfig.METADATA_MAX_AGE_CONFIG, 60000); // Set the maximum time to try and fetch metadata before throwing an exception (60 seconds)
+                    kafkaProperties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 100000);
+                    kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SASL_PROTOCOL); // Use SASL over SSL for security
+                    kafkaProperties.put(SaslConfigs.SASL_MECHANISM, SASL_MECHANISM); // Authentication mechanism
+                    kafkaProperties.put("ssl.enabled.protocols", SASL_TLS_VERSION);  // Specify allowed TLS versions
+                    kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
+                }else{
+                    kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BOOTSTRAP_SERVERS);
+                    kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, KAFKA_CONSUMER_GROUP);
+                    kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+                    kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+                }
+                String clientId = "kafka-consumer-clientId-" + UUID.randomUUID();
+                kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
+                consumer = new KafkaConsumer<>(kafkaProperties) ;
+                consumer.subscribe(Collections.singletonList(KAFKA_INPUT_TOPIC));
 
 
-        KafkaProducer<String, String> producer = new KafkaProducer<>(kafkaProperties);
 
-        for (;;) {
-            // Send the JSON to the Kafka topic
-            String alertVitals = alertVitals();
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
-            System.out.println("Published alert vitals: " + alertVitals);
-            System.out.println();
-            Thread.sleep(1000);
-            String normalVitals = normalVitals();
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
-            System.out.println("Published patient vitals: " + normalVitals);
-            System.out.println();
-            Thread.sleep(1000);
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                System.out.println("Connected to Kafka Broker...");
+                while (true)
+                {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+                    records.forEach(record -> {
+
+                        try {
+                            System.out.println("data process from kafka to kafka"+record.value());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+                }
+
+
+
+
+
+
+
 
     }
 
-    public static String alertVitals() {
-        try {
-            // Create ObjectMapper for JSON handling
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            // Create a JSON object for vitals
-            ObjectNode vitals = objectMapper.createObjectNode();
-
-            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
-
-            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
-
-            // Generate random values for vitals outside the normal range
-            Random rand = new Random();
-            vitals.put("Id", getRandomValue(rand, 1, 5));
-            vitals.put("body_temperature(°F)", getRandomValueOutOfRange(rand, 96.0, 104.0));
-            vitals.put("heart_rate(bpm)", getRandomValueOutOfRange(rand, 40, 160));
-            vitals.put("systolic_pressure(mmHg)", getRandomValueOutOfRange(rand, 60, 200));
-            vitals.put("diastolic_pressure(mmHg)", getRandomValueOutOfRange(rand, 40, 120));
-            vitals.put("respiratory_rate(breaths/min)", getRandomValueOutOfRange(rand, 5, 30));
-            vitals.put("oxygen_saturation%", getRandomValueOutOfRange(rand, 60, 110));
-            vitals.put("blood_glucose_level(mg/dL)", getRandomValueOutOfRange(rand, 20, 400));
-            vitals.put("etco2(mmHg)", getRandomValueOutOfRange(rand, 20, 60));
-            vitals.put("skin_turgor(recoilTimeSec)", getRandomValueOutOfRange(rand, 5, 10));
-
-            // Convert JSON object to String
-            String jsonString = objectMapper.writeValueAsString(vitals);
-            return jsonString;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Data not published...Issue in generating patient vitals";
-        }
-    }
-
-    public static String normalVitals() {
-        try {
-            // Create ObjectMapper for JSON handling
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            // Create a JSON object
-            ObjectNode vitals = objectMapper.createObjectNode();
-
-            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
-
-            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
-
-            // Generate random values for vitals
-            Random rand = new Random();
-            vitals.put("Id", getRandomValue(rand, 1, 5));
-            vitals.put("body_temperature(°F)", getRandomValue(rand, 96.0, 100.0));
-            vitals.put("heart_rate(bpm)", getRandomValue(rand, 60, 100));
-            vitals.put("systolic_pressure(mmHg)", getRandomValue(rand, 90, 140));
-            vitals.put("diastolic_pressure(mmHg)", getRandomValue(rand, 60, 90));
-            vitals.put("respiratory_rate(breaths/min)", getRandomValue(rand, 12, 20));
-            vitals.put("oxygen_saturation%", getRandomValue(rand, 90, 100));
-            vitals.put("blood_glucose_level(mg/dL)", getRandomValue(rand, 70, 140));
-            vitals.put("etco2(mmHg)", getRandomValue(rand, 35, 45));
-            vitals.put("skin_turgor(recoilTimeSec)", getRandomValue(rand, 1, 3));
-
-            // Convert to JSON string and print
-            String jsonString = objectMapper.writeValueAsString(vitals);
-            return jsonString;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Data not published...Issue in generating patient vitals";
-        }
-    }
-
-    // Helper method to generate values outside the normal range (for int)
-    private static int getRandomValueOutOfRange(Random rand, int min, int max) {
-        if (rand.nextBoolean()) { // 50% chance to generate below min
-            return min - (rand.nextInt(10) + 1); // Ensures a valid negative offset
-        } else { // 50% chance to generate above max
-            return max + (rand.nextInt(10) + 1);
-        }
-    }
-
-    // Helper method to generate values outside the normal range (for double)
-    private static double getRandomValueOutOfRange(Random rand, double min, double max) {
-        if (rand.nextBoolean()) { // 50% chance to go below min
-            return Math.round((min - (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
-        } else { // 50% chance to go above max
-            return Math.round((max + (rand.nextDouble() * 5 + 0.1)) * 10.0) / 10.0; // Prevents zero range
-        }
-    }
-
-    // Helper method to generate random int values within a range
-    private static int getRandomValue(Random rand, int min, int max) {
-        return rand.nextInt((max - min) + 1) + min;
-    }
-
-    // Helper method to generate random double values within a range
-    private static double getRandomValue(Random rand, double min, double max) {
-        return Math.round((rand.nextDouble() * (max - min) + min) * 10.0) / 10.0; // Rounds to 1 decimal place
-    }
 
     private static Properties loadProperties() {
 
