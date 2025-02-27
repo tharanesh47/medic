@@ -56,7 +56,7 @@
 //
 //            // Send the JSON to the Kafka topic
 //            String topic = "vitals-topic";  // Kafka topic name
-//            //producer.send(new ProducerRecord<>(topic, null, jsonString));
+//            producer.send(new ProducerRecord<>(topic, null, jsonString));
 //
 //            System.out.println("Sent message: " + jsonString);
 //

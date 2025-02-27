@@ -54,7 +54,7 @@ public class Patient_Vitals {
         SASL_PROTOCOL = loadconfigfile("SASL_PROTOCOL", properties);
         KAFKA_INPUT_TOPIC  = loadconfigfile("KAFKA_INPUT_TOPIC",properties);
         KAFKA_CONSUMER_GROUP= loadconfigfile("KAFKA_CONSUMER_GROUP", properties);
-
+    
 
         KafkaProducerClass kafka = new KafkaProducerClass();
                 Properties kafkaProperties = new Properties();
@@ -65,6 +65,7 @@ public class Patient_Vitals {
                         : false;
 
                 if(sasl_enabled) {
+                    System.out.println("-----------------------------");
                     kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,KAFKA_BOOTSTRAP_SERVERS);
                     kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, KAFKA_CONSUMER_GROUP);
                     kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -76,6 +77,7 @@ public class Patient_Vitals {
                     kafkaProperties.put("ssl.enabled.protocols", SASL_TLS_VERSION);  // Specify allowed TLS versions
                     kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
                 }else{
+                    System.out.println("111111111111111111111111111111111");
                     kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BOOTSTRAP_SERVERS);
                     kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, KAFKA_CONSUMER_GROUP);
                     kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -97,6 +99,7 @@ public class Patient_Vitals {
                             System.out.println("data process from kafka to kafka"+record.value());
                             kafka.publishMessage(record.value());
                         } catch (Exception e) {
+                            System.out.println("inside catch====================================");
                             e.printStackTrace();
                         }
                     });
