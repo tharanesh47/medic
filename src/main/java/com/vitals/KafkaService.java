@@ -15,14 +15,16 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.UUID;
 
 public class KafkaService {
-    private static String BOOTSTRAP_SERVERS;
-    private static String INPUT_TOPIC;
-    private static String OUTPUT_TOPIC;
+    private static String KAFKA_BOOTSTRAP_SERVERS;
+    private static String KAFKA_INPUT_TOPIC;
+    private static String KAFKA_OUTPUT_TOPIC;
     private static String SASL_USERNAME;
     private static String SASL_PASSWORD;
     private static String CONSUMER_GROUP;
+    private static String CLIENT_ID;
 
     private static KafkaConsumer<String, String> consumer;
     private static KafkaProducer<String, String> producer;
@@ -40,16 +42,21 @@ public class KafkaService {
         Properties config = new Properties();
         try (FileInputStream fis = new FileInputStream("config.properties")) {
             config.load(fis);
-            BOOTSTRAP_SERVERS = config.getProperty("KAFKA_BOOTSTRAP_SERVERS");
-            INPUT_TOPIC = config.getProperty("KAFKA_INPUT_TOPIC");
-            OUTPUT_TOPIC = config.getProperty("KAFKA_OUTPUT_TOPIC");
+            KAFKA_BOOTSTRAP_SERVERS = config.getProperty("KAFKA_BOOTSTRAP_SERVERS");
+            KAFKA_INPUT_TOPIC = config.getProperty("KAFKA_INPUT_TOPIC");
+            KAFKA_OUTPUT_TOPIC = config.getProperty("KAFKA_OUTPUT_TOPIC");
             SASL_USERNAME = config.getProperty("SASL_USERNAME");
             SASL_PASSWORD = config.getProperty("SASL_PASSWORD");
 
-            // Generate unique consumer group ID
+            // Generate a unique consumer group ID
             CONSUMER_GROUP = "consumer-" + System.currentTimeMillis();
 
+            // Generate a unique client ID
+            CLIENT_ID = "kafka-consumer-clientId-" + UUID.randomUUID();
+
             System.out.println("Configuration Loaded Successfully!");
+            System.out.println("Generated Consumer Group: " + CONSUMER_GROUP);
+            System.out.println("Generated Client ID: " + CLIENT_ID);
         } catch (IOException e) {
             System.err.println("Error loading config file: " + e.getMessage());
             System.exit(1); // Exit if config file is missing or incorrect
@@ -59,22 +66,25 @@ public class KafkaService {
     private static void setupKafka() {
         // Consumer Properties
         Properties consumerProps = new Properties();
-        consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, CONSUMER_GROUP); // Auto-generated group
+        consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BOOTSTRAP_SERVERS);
+        consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, CONSUMER_GROUP); // Auto-generated consumer group
+        consumerProps.put(ConsumerConfig.CLIENT_ID_CONFIG, CLIENT_ID); // Auto-generated client ID
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
 
-        // SASL Authentication (if required)
+        // SASL Authentication (Security)
         consumerProps.put("security.protocol", "SASL_PLAINTEXT");
         consumerProps.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
         consumerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
                 "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
+        consumerProps.put("ssl.enabled.protocols", "TLSv1.2"); // Secure TLS versions
+        consumerProps.put("ssl.endpoint.identification.algorithm", "HTTPS"); // Enable hostname verification
 
         // Producer Properties
         Properties producerProps = new Properties();
-        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
+        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BOOTSTRAP_SERVERS);
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
@@ -84,13 +94,15 @@ public class KafkaService {
         producerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
                 "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
+        producerProps.put("ssl.enabled.protocols", "TLSv1.2");
+        producerProps.put("ssl.endpoint.identification.algorithm", "HTTPS");
 
         consumer = new KafkaConsumer<>(consumerProps);
         producer = new KafkaProducer<>(producerProps);
     }
 
     private static void consumeAndProduce() {
-        consumer.subscribe(Collections.singleton(INPUT_TOPIC));
+        consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
 
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
@@ -99,10 +111,12 @@ public class KafkaService {
                     String receivedMessage = record.value();
                     System.out.println("Received Message: " + receivedMessage);
 
-                    // Process message (in this case, just forwarding)
-                    ProducerRecord<String, String> producerRecord = new ProducerRecord<>(OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
+                    // Publish the received message to the output topic
+                    ProducerRecord<String, String> producerRecord =
+                            new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
                     producer.send(producerRecord);
-                    System.out.println("Message published to " + OUTPUT_TOPIC);
+
+                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC);
                 } catch (Exception e) {
                     System.err.println("Error processing message: " + e.getMessage());
                 }
