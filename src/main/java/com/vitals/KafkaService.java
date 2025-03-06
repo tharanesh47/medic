@@ -40,7 +40,7 @@ public class KafkaService {
 
     private static void loadConfig() {
         Properties config = new Properties();
-        try (FileInputStream fis = new FileInputStream("config.properties")) {
+        try (FileInputStream fis = new FileInputStream("./src/main/resources/config.properties")) {
             config.load(fis);
             KAFKA_BOOTSTRAP_SERVERS = config.getProperty("KAFKA_BOOTSTRAP_SERVERS");
             KAFKA_INPUT_TOPIC = config.getProperty("KAFKA_INPUT_TOPIC");
