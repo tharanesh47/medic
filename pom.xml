@@ -41,7 +41,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.vitals.Patient_Vitals</mainClass>
+                            <mainClass>com.vitals.KafkaService</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
