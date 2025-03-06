@@ -10,8 +10,8 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -30,7 +30,7 @@ public class KafkaService {
     private static KafkaProducer<String, String> producer;
 
     public static void main(String[] args) {
-        loadConfig(); // Load configuration from file
+        loadConfig(); // Load configuration from classpath
         setupKafka();
         consumeAndProduce();
 
@@ -38,29 +38,52 @@ public class KafkaService {
         Runtime.getRuntime().addShutdownHook(new Thread(KafkaService::shutdown));
     }
 
-    private static void loadConfig() {
-        Properties config = new Properties();
-        try (FileInputStream fis = new FileInputStream("./src/main/resources/config.properties")) {
-            config.load(fis);
-            KAFKA_BOOTSTRAP_SERVERS = config.getProperty("KAFKA_BOOTSTRAP_SERVERS");
-            KAFKA_INPUT_TOPIC = config.getProperty("KAFKA_INPUT_TOPIC");
-            KAFKA_OUTPUT_TOPIC = config.getProperty("KAFKA_OUTPUT_TOPIC");
-            SASL_USERNAME = config.getProperty("SASL_USERNAME");
-            SASL_PASSWORD = config.getProperty("SASL_PASSWORD");
+    // Method to load properties from the classpath
+    private static Properties loadProperties() {
+        Properties properties = new Properties();
 
-            // Generate a unique consumer group ID
-            CONSUMER_GROUP = "consumer-" + System.currentTimeMillis();
-
-            // Generate a unique client ID
-            CLIENT_ID = "kafka-consumer-clientId-" + UUID.randomUUID();
-
-            System.out.println("Configuration Loaded Successfully!");
-            System.out.println("Generated Consumer Group: " + CONSUMER_GROUP);
-            System.out.println("Generated Client ID: " + CLIENT_ID);
+        try (InputStream input = KafkaService.class.getClassLoader().getResourceAsStream("config.properties")) {
+            if (input == null) {
+                System.out.println("Unable to find the config.properties file.");
+                System.exit(1); // Exit if file is missing
+            }
+            properties.load(input);
         } catch (IOException e) {
-            System.err.println("Error loading config file: " + e.getMessage());
-            System.exit(1); // Exit if config file is missing or incorrect
+            System.out.println("Error loading config.properties file: " + e);
+            System.exit(1); // Exit on error
         }
+
+        return properties;
+    }
+
+    // Method to load the property from environment variable or from properties file
+    private static String loadConfigFile(String propertyName, Properties properties) {
+        String envVarValue = System.getenv(propertyName);
+
+        // Return environment variable value if set, otherwise return value from properties file
+        return (envVarValue != null && !envVarValue.isEmpty()) ? envVarValue : properties.getProperty(propertyName);
+    }
+
+    // Updated loadConfig method using loadProperties and loadConfigFile
+    private static void loadConfig() {
+        Properties config = loadProperties(); // Load properties from classpath
+
+        // Use environment variables or fall back to properties file values
+        KAFKA_BOOTSTRAP_SERVERS = loadConfigFile("KAFKA_BOOTSTRAP_SERVERS", config);
+        KAFKA_INPUT_TOPIC = loadConfigFile("KAFKA_INPUT_TOPIC", config);
+        KAFKA_OUTPUT_TOPIC = loadConfigFile("KAFKA_OUTPUT_TOPIC", config);
+        SASL_USERNAME = loadConfigFile("SASL_USERNAME", config);
+        SASL_PASSWORD = loadConfigFile("SASL_PASSWORD", config);
+
+        // Generate a unique consumer group ID
+        CONSUMER_GROUP = "consumer-" + System.currentTimeMillis();
+
+        // Generate a unique client ID
+        CLIENT_ID = "kafka-consumer-clientId-" + UUID.randomUUID();
+
+        System.out.println("Configuration Loaded Successfully!");
+        System.out.println("Generated Consumer Group: " + CONSUMER_GROUP);
+        System.out.println("Generated Client ID: " + CLIENT_ID);
     }
 
     private static void setupKafka() {
@@ -101,23 +124,22 @@ public class KafkaService {
 
     private static void consumeAndProduce() {
         consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
-
+        System.out.println("inside consumeAndProduce");
         while (true) {
+            System.out.println("while=====================");
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
             records.forEach(record -> {
-                try {
+
+                    System.out.println("Connected to consumer....");
                     String receivedMessage = record.value();
                     System.out.println("Received Message: " + receivedMessage);
 
                     // Publish the received message to the output topic
-                    ProducerRecord<String, String> producerRecord =
-                            new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
+                    ProducerRecord<String, String> producerRecord = new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
                     producer.send(producerRecord);
 
-                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC+": "+receivedMessage);
-                } catch (Exception e) {
-                    System.err.println("Error processing message: " + e.getMessage());
-                }
+                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC + ": " + receivedMessage);
+
             });
         }
     }
