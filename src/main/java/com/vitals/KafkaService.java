@@ -6,6 +6,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -30,8 +31,10 @@ public class KafkaService {
     private static KafkaProducer<String, String> producer;
 
     public static void main(String[] args) {
-        loadConfig(); // Load configuration from classpath
+        loadConfig();
+        System.out.println("Loaded configs...");
         setupKafka();
+        System.out.println("kafka setup done...");
         consumeAndProduce();
 
         // Graceful shutdown on Ctrl+C
@@ -94,7 +97,7 @@ public class KafkaService {
         consumerProps.put(ConsumerConfig.CLIENT_ID_CONFIG, CLIENT_ID); // Auto-generated client ID
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         // SASL Authentication (Security)
         consumerProps.put("security.protocol", "SASL_PLAINTEXT");
@@ -119,26 +122,30 @@ public class KafkaService {
         producerProps.put("ssl.enabled.protocols", "TLSv1.2");
 
         consumer = new KafkaConsumer<>(consumerProps);
+        System.out.println("Created consumer....");
         producer = new KafkaProducer<>(producerProps);
     }
 
     private static void consumeAndProduce() {
-        consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
-        System.out.println("inside consumeAndProduce");
+        consumer.listTopics().forEach((name, details) -> System.out.println("Available topic: " + name));
+        //consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
+
+        consumer.assign(Collections.singleton(new TopicPartition(KAFKA_INPUT_TOPIC, 1)));
+        System.out.println("Topic set.....");
+
         while (true) {
-            System.out.println("while=====================");
+            System.out.println("polling for data....");
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
             records.forEach(record -> {
+                System.out.println("data present...");
+                String receivedMessage = record.value();
+                System.out.println("Received Message: " + receivedMessage);
 
-                    System.out.println("Connected to consumer....");
-                    String receivedMessage = record.value();
-                    System.out.println("Received Message: " + receivedMessage);
+                // Publish the received message to the output topic
+                ProducerRecord<String, String> producerRecord = new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
+                producer.send(producerRecord);
 
-                    // Publish the received message to the output topic
-                    ProducerRecord<String, String> producerRecord = new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
-                    producer.send(producerRecord);
-
-                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC + ": " + receivedMessage);
+                System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC + ": " + receivedMessage);
 
             });
         }
