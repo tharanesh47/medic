@@ -116,7 +116,7 @@ public class KafkaService {
                             new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, "ProcessedEvent", receivedMessage);
                     producer.send(producerRecord);
 
-                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC);
+                    System.out.println("Message published to " + KAFKA_OUTPUT_TOPIC+": "+receivedMessage);
                 } catch (Exception e) {
                     System.err.println("Error processing message: " + e.getMessage());
                 }
