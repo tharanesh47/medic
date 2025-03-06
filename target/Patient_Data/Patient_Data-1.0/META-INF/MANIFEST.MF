@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Created-By: Apache Maven 3.9.9
+Built-By: tharanesh
+Build-Jdk: 21.0.6
+Class-Path: lib/jackson-databind-2.15.2.jar lib/jackson-annotations-2.15
+ .2.jar lib/jackson-core-2.15.2.jar lib/kafka-clients-3.9.0.jar lib/zstd
+ -jni-1.5.6-4.jar lib/lz4-java-1.8.0.jar lib/snappy-java-1.1.10.5.jar li
+ b/slf4j-api-1.7.36.jar
+Main-Class: com.vitals.KafkaService
+
