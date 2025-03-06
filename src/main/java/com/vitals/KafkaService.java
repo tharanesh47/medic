@@ -80,7 +80,6 @@ public class KafkaService {
                 "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
         consumerProps.put("ssl.enabled.protocols", "TLSv1.2"); // Secure TLS versions
-        consumerProps.put("ssl.endpoint.identification.algorithm", "HTTPS"); // Enable hostname verification
 
         // Producer Properties
         Properties producerProps = new Properties();
@@ -95,7 +94,6 @@ public class KafkaService {
                 "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
         producerProps.put("ssl.enabled.protocols", "TLSv1.2");
-        producerProps.put("ssl.endpoint.identification.algorithm", "HTTPS");
 
         consumer = new KafkaConsumer<>(consumerProps);
         producer = new KafkaProducer<>(producerProps);
