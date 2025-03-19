@@ -1,6 +1,5 @@
 package com.vitals;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -12,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
@@ -25,6 +26,16 @@ public class Patient_Vitals {
     public static String SASL_MECHANISM;
     public static String SASL_TLS_VERSION;
     public static String SASL_PROTOCOL;
+
+    private static final Map<Integer, String> patientNames = new HashMap<>();
+
+    static {
+        patientNames.put(1, "Tharanesh");
+        patientNames.put(2, "Akshay");
+        patientNames.put(3, "Sridhar");
+        patientNames.put(4, "Tanmaya");
+        patientNames.put(5, "Sugam");
+    }
 
     public static void main(String[]args) throws Exception {
         // Set up Kafka producer properties
@@ -59,85 +70,58 @@ public class Patient_Vitals {
 
         for (;;) {
             // Send the JSON to the Kafka topic
-            String alertVitals = alertVitals();
+            String alertVitals = generateVitals(true);
             producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
-            System.out.println("Published alert vitals: " + alertVitals);
+            System.out.println("Alert vitals: " + alertVitals);
             System.out.println();
             Thread.sleep(1000);
-            String normalVitals = normalVitals();
+            String normalVitals = generateVitals(false);
             producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
-            System.out.println("Published patient vitals: " + normalVitals);
+            System.out.println("Normal vitals: " + normalVitals);
             System.out.println();
             Thread.sleep(1000);
         }
 
     }
 
-    public static String alertVitals() {
+    private static String generateVitals(boolean isAlert) {
         try {
-            // Create ObjectMapper for JSON handling
             ObjectMapper objectMapper = new ObjectMapper();
-
-            // Create a JSON object for vitals
             ObjectNode vitals = objectMapper.createObjectNode();
-
-            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
-
-            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
-
-            // Generate random values for vitals outside the normal range
             Random rand = new Random();
-            vitals.put("Id", getRandomValue(rand, 1, 5));
-            vitals.put("body_temperature_°F", getRandomValueOutOfRange(rand, 96.0, 104.0));
-            vitals.put("heart_rate_bpm", getRandomValueOutOfRange(rand, 40, 160));
-            vitals.put("systolic_pressure_mmHg", getRandomValueOutOfRange(rand, 60, 200));
-            vitals.put("diastolic_pressure_mmHg", getRandomValueOutOfRange(rand, 40, 120));
-            vitals.put("respiratory_rate_breaths/min", getRandomValueOutOfRange(rand, 5, 30));
-            vitals.put("oxygen_saturation%", getRandomValueOutOfRange(rand, 60, 110));
-            vitals.put("blood_glucose_level_mg/dL", getRandomValueOutOfRange(rand, 20, 400));
-            vitals.put("etco2_mmHg", getRandomValueOutOfRange(rand, 20, 60));
-            vitals.put("skin_turgor_recoilTimeSec", getRandomValueOutOfRange(rand, 5, 10));
-            vitals.put("Alert",getRandomValue(rand, 60, 70));
-            // Convert JSON object to String
-            String jsonString = objectMapper.writeValueAsString(vitals);
-            return jsonString;
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Data not published...Issue in generating patient vitals";
-        }
-    }
+            ZonedDateTime currentUtcTime = ZonedDateTime.now(ZoneId.of("UTC"));
+            vitals.put("time", currentUtcTime.toEpochSecond());
 
-    public static String normalVitals() {
-        try {
-            // Create ObjectMapper for JSON handling
-            ObjectMapper objectMapper = new ObjectMapper();
+            int id = getRandomValue(rand, 1, 5);
+            vitals.put("Id", id);
+            vitals.put("Name", patientNames.getOrDefault(id, "Unknown Patient"));
 
-            // Create a JSON object
-            ObjectNode vitals = objectMapper.createObjectNode();
+            if (isAlert) {
+                vitals.put("body_temperature_°F", getRandomValueOutOfRange(rand, 96.0, 100.1));
+                vitals.put("heart_rate_bpm", getRandomValueOutOfRange(rand, 60, 100));
+                vitals.put("systolic_pressure_mmHg", getRandomValueOutOfRange(rand, 90, 120));
+                vitals.put("diastolic_pressure_mmHg", getRandomValueOutOfRange(rand, 40, 120));
+                vitals.put("respiratory_rate_breaths/min", getRandomValueOutOfRange(rand, 5, 25));
+                vitals.put("oxygen_saturation%", getRandomValue(rand, 70, 90));
+                vitals.put("blood_glucose_level_mg/dL", getRandomValueOutOfRange(rand, 70, 120));
+                vitals.put("etco2_mmHg", getRandomValueOutOfRange(rand, 20, 60));
+                vitals.put("skin_turgor_recoilTimeSec", getRandomValueOutOfRange(rand, 5, 10));
+                vitals.put("isAlert", true);
+            } else {
+                vitals.put("body_temperature_°F", getRandomValue(rand, 96.0, 100.0));
+                vitals.put("heart_rate_bpm", getRandomValue(rand, 60, 100));
+                vitals.put("systolic_pressure_mmHg", getRandomValue(rand, 90, 120));
+                vitals.put("diastolic_pressure_mmHg", getRandomValue(rand, 40, 120));
+                vitals.put("respiratory_rate_breaths/min", getRandomValue(rand, 12, 20));
+                vitals.put("oxygen_saturation%", getRandomValue(rand, 90, 100));
+                vitals.put("blood_glucose_level_mg/dL", getRandomValue(rand, 70, 120));
+                vitals.put("etco2_mmHg", getRandomValue(rand, 35, 45));
+                vitals.put("skin_turgor_recoilTimeSec", getRandomValue(rand, 1, 3));
+                vitals.put("isAlert", false);
+            }
 
-            ZonedDateTime currentutcTime = ZonedDateTime.now(ZoneId.of("UTC"));
-
-            vitals.put("time", currentutcTime.toEpochSecond()); // Current timestamp
-
-            // Generate random values for vitals
-            Random rand = new Random();
-            vitals.put("Id", getRandomValue(rand, 1, 5));
-            vitals.put("body_temperature_°F", getRandomValue(rand, 96.0, 100.0));
-            vitals.put("heart_rate_bpm", getRandomValue(rand, 60, 100));
-            vitals.put("systolic_pressure_mmHg", getRandomValue(rand, 90, 140));
-            vitals.put("diastolic_pressure_mmHg", getRandomValue(rand, 60, 90));
-            vitals.put("respiratory_rate_breaths/min", getRandomValue(rand, 12, 20));
-            vitals.put("oxygen_saturation%", getRandomValue(rand, 90, 100));
-            vitals.put("blood_glucose_level_mg/dL", getRandomValue(rand, 70, 140));
-            vitals.put("etco2_mmHg", getRandomValue(rand, 35, 45));
-            vitals.put("skin_turgor_recoilTimeSec", getRandomValue(rand, 1, 3));
-            vitals.put("Alert",getRandomValue(rand, 60, 70));
-
-            // Convert to JSON string and print
-            String jsonString = objectMapper.writeValueAsString(vitals);
-            return jsonString;
-
+            return objectMapper.writeValueAsString(vitals);
         } catch (Exception e) {
             e.printStackTrace();
             return "Data not published...Issue in generating patient vitals";
