@@ -19,7 +19,7 @@ import java.util.Random;
 public class Patient_Vitals {
 
     public static String KAFKA_OUTPUT_TOPIC;
-    public static String SASL_ENABLED;
+//    public static String SASL_ENABLED;
     public static String SASL_USERNAME;
     public static String SASL_PASSWORD;
 
@@ -40,7 +40,7 @@ public class Patient_Vitals {
 
 
         KAFKA_OUTPUT_TOPIC = loadconfigfile("KAFKA_OUTPUT_TOPIC",properties);
-        SASL_ENABLED = loadconfigfile("SASL_ENABLED", properties);
+//        SASL_ENABLED = loadconfigfile("SASL_ENABLED", properties);
         SASL_USERNAME = loadconfigfile("SASL_USERNAME", properties);
         SASL_PASSWORD = loadconfigfile("SASL_PASSWORD", properties);
 
