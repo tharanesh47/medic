@@ -18,14 +18,11 @@ import java.util.Random;
 
 public class Patient_Vitals {
 
-    public static String KAFKA_BOOTSTRAP_SERVERS;
     public static String KAFKA_OUTPUT_TOPIC;
     public static String SASL_ENABLED;
     public static String SASL_USERNAME;
     public static String SASL_PASSWORD;
-    public static String SASL_MECHANISM;
-    public static String SASL_TLS_VERSION;
-    public static String SASL_PROTOCOL;
+
 
     private static final Map<Integer, String> patientNames = new HashMap<>();
 
@@ -43,26 +40,22 @@ public class Patient_Vitals {
 
 
         KAFKA_OUTPUT_TOPIC = loadconfigfile("KAFKA_OUTPUT_TOPIC",properties);
-        KAFKA_BOOTSTRAP_SERVERS = loadconfigfile("KAFKA_BOOTSTRAP_SERVERS", properties);
         SASL_ENABLED = loadconfigfile("SASL_ENABLED", properties);
         SASL_USERNAME = loadconfigfile("SASL_USERNAME", properties);
         SASL_PASSWORD = loadconfigfile("SASL_PASSWORD", properties);
-        SASL_MECHANISM = loadconfigfile("SASL_MECHANISM", properties);
-        SASL_TLS_VERSION = loadconfigfile("SASL_TLS_VERSION", properties);
-        SASL_PROTOCOL = loadconfigfile("SASL_PROTOCOL", properties);
 
 
         Properties kafkaProperties = new Properties();
-        kafkaProperties.put("bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS);
+        kafkaProperties.put("bootstrap.servers", "my-cluster-kafka-bootstrap.kafka:9092");
         kafkaProperties.put("acks", "all");
         kafkaProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaProperties.put("topic",KAFKA_OUTPUT_TOPIC);
         kafkaProperties.put("batch.size", "5"); // Set the desired batch size in bytes
         kafkaProperties.put("linger.ms", "30000");
-        kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SASL_PROTOCOL); // Use SASL over SSL for security
-        kafkaProperties.put(SaslConfigs.SASL_MECHANISM, SASL_MECHANISM); // Authentication mechanism
-        kafkaProperties.put("ssl.enabled.protocols", SASL_TLS_VERSION);  // Specify allowed TLS versions
+        kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT"); // Use SASL over SSL for security
+        kafkaProperties.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512"); // Authentication mechanism
+        kafkaProperties.put("ssl.enabled.protocols", "TLSv1.2");  // Specify allowed TLS versions
         kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
 
 
