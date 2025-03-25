@@ -1,20 +1,22 @@
 package com.vitals;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -79,8 +81,7 @@ public class KafkaService {
         SASL_PASSWORD = loadConfigFile("SASL_PASSWORD", config);
 
         // Generate a unique consumer group ID
-        CONSUMER_GROUP = "consumer-" + System.currentTimeMillis();
-
+        CONSUMER_GROUP = "Kafka_consumer_"+new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         // Generate a unique client ID
         CLIENT_ID = "kafka-consumer-clientId-" + UUID.randomUUID();
 
@@ -100,12 +101,12 @@ public class KafkaService {
         consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         // SASL Authentication (Security)
-        consumerProps.put("security.protocol", "SASL_PLAINTEXT");
+        consumerProps.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         consumerProps.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
         consumerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
-                "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                "org.apache.kafka.common.security.scram.ScramLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
-        consumerProps.put("ssl.enabled.protocols", "TLSv1.2"); // Secure TLS versions
+        consumerProps.put("ssl.enabled.protocols", "TLSv1.2");
 
         // Producer Properties
         Properties producerProps = new Properties();
@@ -117,21 +118,20 @@ public class KafkaService {
         producerProps.put("security.protocol", "SASL_PLAINTEXT");
         producerProps.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
         producerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
-                "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                "org.apache.kafka.common.security.scram.ScramLoginModule required " +
                         "username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
         producerProps.put("ssl.enabled.protocols", "TLSv1.2");
 
         consumer = new KafkaConsumer<>(consumerProps);
-        System.out.println("Created consumer....");
+        System.out.println("Created consumer group: "+CONSUMER_GROUP+"     consumer: "+consumer);
         producer = new KafkaProducer<>(producerProps);
+        System.out.println("Created producer:  "+producer);
     }
 
     private static void consumeAndProduce() {
-        consumer.listTopics().forEach((name, details) -> System.out.println("Available topic: " + name));
-        //consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
 
-        consumer.assign(Collections.singleton(new TopicPartition(KAFKA_INPUT_TOPIC, 1)));
-        System.out.println("Topic set.....");
+        consumer.subscribe(Collections.singleton(KAFKA_INPUT_TOPIC));
+        System.out.println("Subscribed to: " + consumer.subscription());
 
         while (true) {
             System.out.println("polling for data....");

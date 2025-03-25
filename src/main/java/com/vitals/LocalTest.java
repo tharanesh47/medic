@@ -3,7 +3,9 @@
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import com.fasterxml.jackson.databind.node.ObjectNode;
 //import org.apache.kafka.clients.producer.KafkaProducer;
+//import org.apache.kafka.clients.producer.ProducerConfig;
 //import org.apache.kafka.clients.producer.ProducerRecord;
+//import org.apache.kafka.common.config.SaslConfigs;
 //import org.apache.kafka.common.serialization.StringSerializer;
 //
 //import java.util.Properties;
@@ -23,12 +25,25 @@
 //    public static void alertVitals() {
 //        // Set up Kafka producer properties
 //        Properties properties = new Properties();
-//        properties.put("bootstrap.servers", "localhost:9092");  // Change if using a remote Kafka server
-//        properties.put("key.serializer", StringSerializer.class.getName());
-//        properties.put("value.serializer", StringSerializer.class.getName());
+////        properties.put("bootstrap.servers", "localhost:9092");  // Change if using a remote Kafka server
+////        properties.put("key.serializer", StringSerializer.class.getName());
+////        properties.put("value.serializer", StringSerializer.class.getName());
+//
+//        Properties producerProps = new Properties();
+//        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+//        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+//        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+//
+//        // Apply SASL to Producer as well
+//        producerProps.put("security.protocol", "SASL_PLAINTEXT");
+//        producerProps.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
+//        producerProps.put(SaslConfigs.SASL_JAAS_CONFIG,
+//                "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+//                        "username=\"" + "my-connect-user" + "\" password=\"" + "3uuqhR2WHaxzC" + "\";");
+//        producerProps.put("ssl.enabled.protocols", "TLSv1.2");
 //
 //        // Create Kafka producer
-//        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
+//        KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps);
 //
 //        try {
 //            // Create ObjectMapper for JSON handling
@@ -55,7 +70,7 @@
 //            String jsonString = objectMapper.writeValueAsString(vitals);
 //
 //            // Send the JSON to the Kafka topic
-//            String topic = "vitals-topic";  // Kafka topic name
+//            String topic = "producer1";  // Kafka topic name
 //            producer.send(new ProducerRecord<>(topic, null, jsonString));
 //
 //            System.out.println("Sent message: " + jsonString);
@@ -105,7 +120,7 @@
 //            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(vitals);
 //
 //            // Send the JSON to the Kafka topic
-//            String topic = "vitals-topic";  // Kafka topic name
+//            String topic = "producer1";  // Kafka topic name
 //            //producer.send(new ProducerRecord<>(topic, null, jsonString));
 //
 //            System.out.println("Sent message: " + jsonString);
