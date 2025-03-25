@@ -1,5 +1,5 @@
 #FROM openjdk:8-jre-alpine
-FROM amazoncorretto:21
+FROM openjdk:21
 #RUN apk add --update tcpdump
 COPY target/Patient_Data-1.0.jar /Patient_Data/
 COPY target/Patient_Data/Patient_Data-*/lib/* /Patient_Data/lib/
