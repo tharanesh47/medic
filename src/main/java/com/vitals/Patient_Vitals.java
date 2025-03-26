@@ -67,12 +67,12 @@ public class Patient_Vitals {
             producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
             System.out.println("Alert vitals: " + alertVitals);
             System.out.println();
-            Thread.sleep(1000);
+            Thread.sleep(5000);
             String normalVitals = generateVitals(false);
             producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
             System.out.println("Normal vitals: " + normalVitals);
             System.out.println();
-            Thread.sleep(1000);
+            Thread.sleep(5000);
         }
 
     }
