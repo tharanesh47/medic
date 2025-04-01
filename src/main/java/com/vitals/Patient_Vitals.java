@@ -57,7 +57,7 @@ public class Patient_Vitals {
 //        kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
 
         producer = new KafkaProducer<>(kafkaProperties);
-        while(true) {
+//        while(true) {
             try (InputStream input = Patient_Vitals.class.getClassLoader().getResourceAsStream("vitals_data.txt")) {
                 if (input == null) {
                     System.out.println("File not found in resources!");
@@ -87,7 +87,7 @@ public class Patient_Vitals {
             }
         }
 
-    }
+//    }
 
     private static Properties loadProperties() {
 
