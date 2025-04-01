@@ -9,10 +9,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -33,6 +30,7 @@ public class Patient_Vitals {
     private static final Map<Integer, String> patientNames = new HashMap<>();
 
     static KafkaProducer<String, String> producer;
+    static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[]args) throws Exception {
         // Set up Kafka producer properties
@@ -59,41 +57,36 @@ public class Patient_Vitals {
 //        kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
 
         producer = new KafkaProducer<>(kafkaProperties);
-
-        String filePath = "src/main/resources/vitals_data.txt";
-        sendVitals(filePath, INTERVAL);
-
-    }
-
-    public static void sendVitals(String filePath, int intervalMillis) {
-        // Set up Kafka producer properties
-
-        ObjectMapper objectMapper = new ObjectMapper();
         while(true) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-                while ((line = reader.readLine()) != null) {  // Read line by line
+            try (InputStream input = Patient_Vitals.class.getClassLoader().getResourceAsStream("vitals_data.txt")) {
+                if (input == null) {
+                    System.out.println("File not found in resources!");
+                    return;
+                }
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                String line;
+                while ((line = reader.readLine()) != null) {
                     try {
                         // Validate and parse JSON
                         JsonNode jsonNode = objectMapper.readTree(line);
                         String jsonString = objectMapper.writeValueAsString(jsonNode);
 
-                        producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, jsonString));
+//                        producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, jsonString));
                         System.out.println("Sent message: " + jsonString);
 
                         // Sleep for specified interval
-                        TimeUnit.MILLISECONDS.sleep(intervalMillis);
+                        Thread.sleep(INTERVAL);
                     } catch (Exception e) {
                         System.err.println("Invalid JSON: " + line);
                         e.printStackTrace();
                     }
                 }
-            }catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                producer.close();
+            } catch (IOException e) {
+                System.out.println("Error reading file: " + e.getMessage());
             }
         }
+
     }
 
     private static Properties loadProperties() {
