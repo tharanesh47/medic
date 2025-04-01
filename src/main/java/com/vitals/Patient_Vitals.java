@@ -60,7 +60,7 @@ public class Patient_Vitals {
 
         producer = new KafkaProducer<>(kafkaProperties);
 
-        String filePath = "./vitals_data.txt";
+        String filePath = "src/main/resources/vitals_data.txt";
         sendVitals(filePath, INTERVAL);
 
     }
