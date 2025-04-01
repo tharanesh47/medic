@@ -72,7 +72,7 @@ public class Patient_Vitals {
                         JsonNode jsonNode = objectMapper.readTree(line);
                         String jsonString = objectMapper.writeValueAsString(jsonNode);
 
-//                        producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, jsonString));
+                        producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, jsonString));
                         System.out.println("Sent message: " + jsonString);
 
                         // Sleep for specified interval
