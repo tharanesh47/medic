@@ -19,10 +19,10 @@ import java.util.Random;
 public class Patient_Vitals {
 
     public static String KAFKA_OUTPUT_TOPIC;
-//    public static String SASL_ENABLED;
     public static String SASL_USERNAME;
     public static String SASL_PASSWORD;
-
+    public static int INTERVAL_SEC;
+    public static int key;
 
     private static final Map<Integer, String> patientNames = new HashMap<>();
 
@@ -38,12 +38,10 @@ public class Patient_Vitals {
         // Set up Kafka producer properties
         Properties properties = loadProperties();
 
-
         KAFKA_OUTPUT_TOPIC = loadconfigfile("KAFKA_OUTPUT_TOPIC",properties);
-//        SASL_ENABLED = loadconfigfile("SASL_ENABLED", properties);
         SASL_USERNAME = loadconfigfile("SASL_USERNAME", properties);
         SASL_PASSWORD = loadconfigfile("SASL_PASSWORD", properties);
-
+        INTERVAL_SEC = Integer.parseInt(loadconfigfile("INTERVAL_SEC",properties));
 
         Properties kafkaProperties = new Properties();
         kafkaProperties.put("bootstrap.servers", "my-cluster-kafka-bootstrap.kafka:9092");
@@ -51,11 +49,11 @@ public class Patient_Vitals {
         kafkaProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaProperties.put("topic",KAFKA_OUTPUT_TOPIC);
-        kafkaProperties.put("batch.size", "5"); // Set the desired batch size in bytes
+        kafkaProperties.put("batch.size", "5");
         kafkaProperties.put("linger.ms", "30000");
-        kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT"); // Use SASL over SSL for security
-        kafkaProperties.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512"); // Authentication mechanism
-        kafkaProperties.put("ssl.enabled.protocols", "TLSv1.2");  // Specify allowed TLS versions
+        kafkaProperties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        kafkaProperties.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
+        kafkaProperties.put("ssl.enabled.protocols", "TLSv1.2");
         kafkaProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"" + SASL_USERNAME + "\" password=\"" + SASL_PASSWORD + "\";");
 
 
@@ -64,15 +62,15 @@ public class Patient_Vitals {
         for (;;) {
             // Send the JSON to the Kafka topic
             String alertVitals = generateVitals(true);
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, alertVitals));
+            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,String.valueOf(key), alertVitals));
             System.out.println("Alert vitals: " + alertVitals);
             System.out.println();
-            Thread.sleep(5000);
+            Thread.sleep(INTERVAL_SEC *1000);
             String normalVitals = generateVitals(false);
-            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC,  normalVitals));
+            producer.send(new ProducerRecord<>(KAFKA_OUTPUT_TOPIC, String.valueOf(key), normalVitals));
             System.out.println("Normal vitals: " + normalVitals);
             System.out.println();
-            Thread.sleep(5000);
+            Thread.sleep(INTERVAL_SEC *1000);
         }
 
     }
@@ -86,9 +84,9 @@ public class Patient_Vitals {
             ZonedDateTime currentUtcTime = ZonedDateTime.now(ZoneId.of("UTC"));
             vitals.put("time", currentUtcTime.toEpochSecond());
 
-            int id = getRandomValue(rand, 1, 5);
-            vitals.put("Id", id);
-            vitals.put("Name", patientNames.getOrDefault(id, "Unknown Patient"));
+            int key = getRandomValue(rand, 1, 5);
+            vitals.put("Id", key);
+            vitals.put("Name", patientNames.getOrDefault(key, "Unknown Patient"));
 
             if (isAlert) {
                 vitals.put("body_temperature_°F", getRandomValueOutOfRange(rand, 96.0, 100.1));
