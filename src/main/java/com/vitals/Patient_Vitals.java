@@ -84,7 +84,7 @@ public class Patient_Vitals {
             ZonedDateTime currentUtcTime = ZonedDateTime.now(ZoneId.of("UTC"));
             vitals.put("time", currentUtcTime.toEpochSecond());
 
-            int key = getRandomValue(rand, 1, 5);
+            key = getRandomValue(rand, 1, 5);
             vitals.put("Id", key);
             vitals.put("Name", patientNames.getOrDefault(key, "Unknown Patient"));
 
